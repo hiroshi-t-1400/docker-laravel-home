@@ -50,6 +50,8 @@ services:
     # MariaDBの最新安定版イメージを使用
     image: mariadb:latest
     container_name: laravel_db
+    ports:
+      - "3306:3306"
     # .env で設定した環境変数を基にDBをセットアップ
     environment:
       MYSQL_DATABASE: ${DB_DATABASE}
@@ -72,4 +74,19 @@ volumes:
   db_data:
     driver: local
     
+# # http://localhost:4040/
+# phpmyadmin:
+#   image: phpmyadmin/phpmyadmin
+#   environment:
+#     - PMA_ARBITRARY=1
+#     - PMA_HOST=db
+#     - PMA_USER=root
+#     - PMA_PASSWORD=root
+#   # dbのサービス名
+#   links:
+#     - db
+#   ports:
+#     - 4040:80
+#   volumes:
+#     - ./phpmyadmin/sessions:/sessions
       
