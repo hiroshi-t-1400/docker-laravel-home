@@ -1,0 +1,75 @@
+services:
+  # ----------------------------------------------------
+  # 1. アプリケーションコンテナ (PHP-FPM 8.4)
+  # ----------------------------------------------------
+  app:
+    # ./docker/php/Dockerfile を使用してイメージをビルド
+    build: 
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    container_name: laravel_app
+    # コンテナ内のデフォルト作業ディレクトリ
+    working_dir: /var/www/html/src
+    # ホストの現在のディレクトリ(Laravelプロジェクトルート)をコンテナ内の/var/www/htmlに舞うと
+    volumes:
+      - ./src:/var/www/html/src
+      # .env ファイルから環境変数を読み込む
+    env_file:
+      - .env
+    # nginxと通信するために、同じネットワークに接続
+    networks:
+     - laravel_network
+    # Nginxより先に起動することを依存関係として定義
+    depends_on:
+     - db
+
+  # ----------------------------------------------------
+  # 2. Webサーバーコンテナ (Nginx)
+  # ----------------------------------------------------
+  nginx:
+    image: nginx:stable-alpine
+    container_name: laravel_nginx
+    # ホストの80番ポートをコンテナの80番ポートにマッピング
+    ports:
+      - "80:80"
+    volumes:
+      # Laravelのコードをnginxにもマウント
+      - .:/var/www/html/src
+      # Nginxの設定ファイルをコンテナ内にバインドマウント
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - laravel_network
+    # PHP-FPMが起動してから起動する
+    depends_on:
+      - app
+
+  # ----------------------------------------------------
+  # 2. Webサーバーコンテナ (Nginx)
+  # ----------------------------------------------------      
+  db:
+    # MariaDBの最新安定版イメージを使用
+    image: mariadb:latest
+    container_name: laravel_db
+    # .env で設定した環境変数を基にDBをセットアップ
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    # データを永続化するための名前付きボリューム
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - laravel_network
+
+# ネットワーク定義
+networks:
+  laravel_network:
+    driver: bridge
+
+# ボリューム定義
+volumes:
+  db_data:
+    driver: local
+    
+      
